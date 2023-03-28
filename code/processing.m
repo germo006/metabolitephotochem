@@ -77,6 +77,13 @@ iCA = (sInfo.matrix=="ASW" & sInfo.sType=="ctrl");
 iBV = (sInfo.matrix=="VSW" & sInfo.sType=="blank");
 iBA = (sInfo.matrix=="ASW" & sInfo.sType=="blank");
 
+%% This is a short diversion to look at flow cytometry data. 
+
+f = FCM_Vis;
+saveas(f, "../graphs/flowcyto.png", "png")
+close(f)
+clear f 
+
 %%
 tBuffer = range(times)*.05;
 tRange = [min(times)-tBuffer, max(times)+tBuffer];
