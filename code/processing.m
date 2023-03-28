@@ -7,11 +7,11 @@
 clear
 close all
 clc
-load("BCP2.2023.03.15.mat")
+load("..\datasets\BCP2.2023.03.16.mat")
 load("AlbumMaps.mat")
 mtabNames = strrep(mtabNames,'′','''');
-if ~exist("graphs", "dir")
-    mkdir("graphs");
+if ~exist("../graphs", "dir")
+    mkdir("../graphs");
 end
 
 % We will use the sInfo variable a lot, to categorize and sort. So, we'll
@@ -84,13 +84,13 @@ tRange_g = rem(datenum(tRange), 1)*24;
 tRange_g(2) = tRange_g(2) + 24;
 tRange_g = tRange_g - tRange_g(1);
 Durations = hours(times-min(times));
-if ~exist("graphs/png/", "dir")
-    mkdir("graphs/png/");
+if ~exist("../graphs/png/", "dir")
+    mkdir("../graphs/png/");
 end
-if ~exist("graphs/logx/", "dir")
-    mkdir("graphs/logx/");
+if ~exist("../graphs/logx/", "dir")
+    mkdir("../graphs/logx/");
 end
-if 1
+if 0
     for ii=1:length(mtabNames)
         f = figure("Visible","off");
         G1 = findgroups(sInfo.matrix(iTimesASW), sInfo.timePoint(iTimesASW), sInfo.sType(iTimesASW));
@@ -136,7 +136,7 @@ if 1
             "LOQ",...
             "MaxStd"], "Location","eastoutside")
         
-        saveas(f, "graphs/png/"+mtabNames(ii)+"_photo1.png", "png")
+        saveas(f, "../graphs/png/"+mtabNames(ii)+"_photo1.png", "png")
         close(f)
     end
     
@@ -185,10 +185,37 @@ if 1
             "VSW Ctrl",...
             "LOQ",...
             "MaxStd"], "Location","eastoutside")
-        saveas(f, "graphs/logx/"+mtabNames(ii)+"_photo1.png", "png")
+        saveas(f, "../graphs/logx/"+mtabNames(ii)+"_photo1.png", "png")
         close(f)
     end
 end
+
+%% Glutamine, Glutamate, and GABA
+% Figured I'd make a figure. 
+
+GluBAnames = {"glutamic acid pos", "glutamine neg", "GABA pos"};
+f = figure("Visible","off");
+for ii=1:length(GluBAnames)
+    ind = find(ismember(mtabNames, GluBAnames{ii}));
+    G1 = findgroups(sInfo.matrix(iTimesASW), sInfo.timePoint(iTimesASW), sInfo.sType(iTimesASW));
+    m1 = splitapply(@means,mtabData_exp(ind,iTimesASW)',G1)./1000;
+    mn = m1-m1(1);
+    mn(isnan(m1)) = 0;
+    errorbar(Durations, mn,...
+        splitapply(@stds,mtabData_exp(ind,iTimesASW)',G1)./1000,...
+        'Color', chainsaw{ii+1}, "LineWidth",1.5); hold on;
+    hold on
+end
+
+ax = gca;
+set(ax, "Box", "on", "LineWidth", 2, "FontSize", 14)
+ylabel("C-C_0 (nM)")
+xlabel("Time (h)")
+xlim(tRange_g)
+legend(["glutamate",...
+    "glutamine",...
+    "GABA"], "Location","northeast")
+saveas(f, "../graphs/"+mtabNames(ii)+"_photo1.png", "png")
 
 %% Which metabolites changed? 
 % Here's the part where we compare the initial and final time points, as
@@ -375,12 +402,12 @@ if 1
     VSWrates.LRate = real(VSWrates.LRate);
     fileBase = 'DegRates'; % Set this, don't mess with the automatic date system.
     today = datestr(datetime('now'),'yyyy-mm-dd_');
-    NameOfFile = string([today,fileBase,'.mat']);
+    NameOfFile = string(['../datasets/',today,fileBase,'.mat']);
     save(NameOfFile, "ASWrates", "VSWrates")
 end
 
 %% Now for some more graphs
-load('2023-03-15_DegRates.mat')
+load('../datasets/2023-03-16_DegRates.mat')
 C = @(A,k,t) A.*exp(-k.*t);
 if 1
     t = 0:0.1:12;
@@ -389,8 +416,8 @@ if 1
     tRange = [-0.5,12.5];
     mtabData_exp_nM = mtabData_exp;
     mtabData_exp_nM = mtabData_exp_nM./1000;
-    if ~exist("graphs\rateplots", "dir")
-        mkdir("graphs\rateplots");
+    if ~exist("../graphs\rateplots", "dir")
+        mkdir("../graphs\rateplots");
     end
     LOQ_nM = LOQ_pM./1000;
     MaxStd_nM = MaxStd_pM./1000;
@@ -557,7 +584,7 @@ if 1
                 "High Standard"], "Location","northeast")
         end
 
-        saveas(f, "graphs/rateplots/"+mtabNames(ii)+"_rate.png", "png")
+        saveas(f, "../graphs/rateplots/"+mtabNames(ii)+"_rate.png", "png")
         close(f)
     end
 end
@@ -575,7 +602,7 @@ eps_quant = movmean(eps_quant,5,"Endpoints","shrink");
 
  %only worth calculating where there's acutally trp absorption
 
-load('irradiance.mat')
+load('../datasets/irradiance.mat')
 
 EA = E_ASW(1:5,1:128);
 EV = E_VSW(1:5,1:128);
@@ -627,8 +654,8 @@ durASW = repelem(Durations,3); durASW(5,:) = [];
 % durVSW = repelem(Durations,3);
 tRange = [-0.5,12.5];
 mtabData_exp_nM = mtabData_exp./1000;
-if ~exist("graphs\trpPlot", "dir")
-    mkdir("graphs\trpPlot");
+if ~exist("../graphs\trpPlot", "dir")
+    mkdir("../graphs\trpPlot");
 end
 LOQ_nM = LOQ_pM./1000;
 MaxStd_nM = MaxStd_pM./1000;
@@ -709,5 +736,5 @@ legend(["Predicted Decay",...
 %     "LOQ",...
 %     "High Standard"], "Location","northeast")
 
-saveas(f, "graphs/trpPlot/trpQY.png", "png")
+saveas(f, "../graphs/trpPlot/trpQY.png", "png")
 close(f)

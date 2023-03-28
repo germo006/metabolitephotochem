@@ -6,9 +6,9 @@ clear
 clc
 close all
 
-dataPath = '../../UV-vis/NPG_BCP2/';
-specInfo = readtable('../../UV-vis/NPG_BCP2/Sample Table.csv');
-baseline = readtable('../../UV-vis/NPG_BCP2/100% or 0 Absorbance Baseline.Correction.Raw.csv');
+dataPath = '../datasets/UV-Vis';
+specInfo = readtable('../datasets/UV-Vis/Sample Table.csv');
+baseline = readtable('../datasets/UV-Vis/100% or 0 Absorbance Baseline.Correction.Raw.csv');
 l = baseline.nm;
 specData = table('Size', [length(l),length(specInfo.Description)+1],...
     'VariableNames', ['l';specInfo.SampleID],...

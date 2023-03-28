@@ -4,7 +4,7 @@ function [l_SunTest,W,E] = loadradiometry
 % Danielle Freeman in the SunTest Atlas XLS+. 
 %   The file to be loaded is "Radiometry_RulerSunTest_forMATLAB.xlsx". This
 %   is the only option, so this function requires no input. 
-data = readtable("../../Radiometry_RulerSunTest_forMATLAB.xlsx");
+data = readtable("../datasets/Radiometry_RulerSunTest_forMATLAB.xlsx");
 l_SunTest = data.l;
 % The data are spatial, so I will create a data cube called W that contains
 % the wavelenth as the long axis and the x,y dimensions as the primary
