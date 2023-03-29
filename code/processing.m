@@ -79,10 +79,12 @@ iBA = (sInfo.matrix=="ASW" & sInfo.sType=="blank");
 
 %% This is a short diversion to look at flow cytometry data. 
 
-f = FCM_Vis;
-saveas(f, "../graphs/flowcyto.png", "png")
-close(f)
-clear f 
+if 0
+    f = FCM_Vis;
+    saveas(f, "../graphs/flowcyto.png", "png")
+    close(f)
+    clear f
+end
 
 %%
 tBuffer = range(times)*.05;
@@ -597,7 +599,7 @@ if 1
 end
 
 %% Now for the magnum opus: tryptophan quantum yields.
-eps = readtable("trpext.xlsx", "Range","C1:E502");
+eps = readtable("../datasets/trpext.xlsx", "Range","C1:E502");
 eps.l = eps.ReducedLambda;
 eps.ep = eps.Eps_zero;
 eps(:,1:3) = [];
@@ -607,7 +609,7 @@ eps_quant(eps_quant==0,:) = 1;
 eps_quant = movmean(eps_quant,5,"Endpoints","shrink");
 
 
- %only worth calculating where there's acutally trp absorption
+%only worth calculating where there's acutally trp absorption
 
 load('../datasets/irradiance.mat')
 
@@ -745,3 +747,96 @@ legend(["Predicted Decay",...
 
 saveas(f, "../graphs/trpPlot/trpQY.png", "png")
 close(f)
+
+%% BINNED QY ESTIMATION
+addpath("./quantum_bin")
+Q = eps_quant./(2*max(eps_quant)); 
+Qmax = ones(size(eps_quant));
+Qlength = size(Q,1);
+Qmin = 1e-7*Q;
+Qbin = ones(5,1);
+Qmin_bin = ones(5,1);
+Qmax_bin = ones(5,1);
+Qbounds = [1;20;40;65;85;128];
+for ii = 1:size(Qbounds,1)-1
+    Qbin(ii) = mean(Q(ii:ii+1));
+    Qmax_bin(ii) = mean(Qmax(ii:ii+1));
+    Qmin_bin(ii) = mean(Qmin(ii:ii+1));
+end
+chiA = @(Qbin) chisq_quantum_bins(m1,s1,EA,eps_quant,Qlength, Qbin,Qbounds,Durations,lrange);
+opts = optimset("PlotFcns", "optimplotfval", "MaxFunEvals", 3e7, "TolX", 1e-6);
+QAest = fmincon(chiA,Qbin, [],[],[],[],Qmin_bin,Qmax_bin,[],opts);
+
+QA_breakout = ones(size(eps_quant,1),1);
+for ii = 1:size(Qbounds,1)-1
+    QA_breakout(Qbounds(ii):Qbounds(ii+1)) = QAest(ii);
+end
+
+figure
+plot(lrange, QA_breakout, "LineWidth",2)
+xlabel("\lambda, nm"); ylabel("\Phi_{ASW}");
+xlim([280 407])
+set(gca, "YScale", "log")
+yyaxis right
+plot(lrange, eps_quant, "LineWidth",2)
+ylabel("\epsilon, M^{-1} cm^{-1}")
+set(gca, "YColor", "k", "YScale", "log")
+
+
+%% Estimating Decay 
+
+durASW = repelem(Durations,3); durASW(5,:) = [];
+tRange = [-0.5,12.5];
+mtabData_exp_nM = mtabData_exp./1000;
+if ~exist("../graphs\trpPlot", "dir")
+    mkdir("../graphs\trpPlot");
+end
+LOQ_nM = LOQ_pM./1000;
+MaxStd_nM = MaxStd_pM./1000;
+t = 0:0.1:12;
+
+f = figure("Visible","on", "Position",[5, 5, 1200, 600], "Units","inches");
+ba =mtabData_exp_nM(ii,iBA); ba(isnan(ba)) = 0;
+bv =mtabData_exp_nM(ii,iBV); bv(isnan(bv)) = 0;
+ca =mtabData_exp_nM(ii,iCA); ca(isnan(ca)) = 0;
+cv =mtabData_exp_nM(ii,iCV); cv(isnan(cv)) = 0;
+
+for ii = 1:5
+    dCdt = @(t,Ct) -Ct.*int_solver(EA(ii,:)',eps_quant,QA_breakout,lrange);
+    tc = 0:1/60:Durations(ii+1);
+    [ty, yhat] = ode45(dCdt,tc,m1(1));
+    ub(ii) = plot(ty, yhat, "--", "LineWidth", 2, "Color", chainsaw{3});
+    if ii~=1
+        ub(ii).HandleVisibility = "off";
+    end
+    hold on
+end
+ii = find(mtabNames=="tryptophan pos");
+scA = scatter(durASW,mtabData_exp_nM(ii,iTimesASW), 50, "filled",...
+    'Color', chainsaw{1});
+scBA = scatter(repelem(Durations(1),1,3), ba, 50, chainsaw{2},...
+    "filled", "Marker","v");
+scCA = scatter(repelem(Durations(6),1,3), ca,50,chainsaw{4},...
+    'filled', "Marker","^");
+
+ax = gca;
+set(ax, "Box", "on", "LineWidth", 2, "FontSize", 14)
+title("ASW")
+ylabel("Concentration, nM")
+xlabel("Time (h)")
+xlim(tRange)
+ylim([0,max(mtabData_exp_nM(ii,:))])
+plot([0,13],[LOQ_nM(ii),LOQ_nM(ii)],"Color",[0.5 0.5 0.5], 'LineStyle', '--', 'LineWidth',2)
+plot([0,13],[MaxStd_nM(ii),MaxStd_nM(ii)],"Color",[0.3 0.3 0.3], 'LineStyle', ':', 'LineWidth',2)
+legend(["Predicted Decay",...
+    "Observations",...
+    "Blank",...
+    "Dark Incubations",...
+    "LOQ",...
+    "High Standard"], "Location","northeast")
+
+saveas(f, "../graphs/trpPlot/trpQY.png", "png")
+%close(f)
+
+
+
