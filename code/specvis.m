@@ -2,48 +2,10 @@
 % Here I will attempt to preprocess and visualize spectrophotometry data
 % from BCP2. 
 
-clear
-clc
+clear 
 close all
 
-dataPath = '../datasets/UV-Vis';
-specInfo = readtable('../datasets/UV-Vis/Sample Table.csv');
-baseline = readtable('../datasets/UV-Vis/100% or 0 Absorbance Baseline.Correction.Raw.csv');
-l = baseline.nm;
-specData = table('Size', [length(l),length(specInfo.Description)+1],...
-    'VariableNames', ['l';specInfo.SampleID],...
-    'VariableTypes', repelem("double",length(specInfo.Spike)+1,1));
-specData.l(:) = l;
-
-for ii=1:size(specData,2)-1
-    temp = readtable(horzcat(dataPath,specInfo.FileName{ii}), 'Range', "B:B");
-    specData(:,ii+1) = temp(:,:);
-end
-
-repGroups = findgroups(specInfo.Matrix, specInfo.Spike, specInfo.timePoint, specInfo.isQC);
-[groupInd, ia, ib] = unique(unique(repGroups, 'stable'));
-meanNames = ["blank0", "MQ0","MQs0","ASW0","ASWs0","VSW0","VSWs0",...
-    "blank12","ASW12","ASWs12","VSW12","VSWs12"];
-horzmean = @(x) mean(x,2);
-preMean = splitapply(horzmean,specData{:,2:end},repGroups');
-preMean = preMean(:,ib); 
-
-means = array2table(preMean, 'VariableNames', meanNames);
-means.l = l;
-means_BLsub = array2table(means{:,1:12} - baseline.A,'VariableNames',meanNames);
-means_BLsub.l = l;
-
-diffmeans = table(l);
-diffmeans.VSW = means.VSW12 - means.VSW0;
-diffmeans.VSWs = means.VSWs12 - means.VSWs0;
-diffmeans.ASW = means.ASW12 - means.ASW0;
-diffmeans.ASWs = means.ASWs12 - means.ASWs0;
-diffmeans.blanks = means.blank12 - means.blank0;
-diffmeans.t0s = means.MQs0 - means.MQ0;
-diffmeans.t0A = means.ASW0 - means.MQ0;
-diffmeans.t0V = means.VSW0 - means.MQ0;
-diffmeans.t0As = means.ASWs0 - means.MQ0;
-diffmeans.t0Vs = means.VSWs0 - means.MQ0;
+load('../datasets/absorbance.mat')
 
 %% Advanced difference testing. 
 % First, I will excise the spectra for which I can make t0/t12 comparisons

@@ -224,7 +224,35 @@ xlim(tRange_g)
 legend(["glutamate",...
     "glutamine",...
     "GABA"], "Location","northeast")
-saveas(f, "../graphs/"+mtabNames(ii)+"_photo1.png", "png")
+saveas(f, "../graphs/GLUBA_photo1.png", "png")
+
+%% Histidine, Aspartate, Asparagine
+% Figured I'd make a figure. 
+
+HAAnames = {"histidine pos", "asparagine neg", "aspartate pos"};
+f = figure("Visible","on");
+for ii=1:length(HAAnames)
+    ind = find(ismember(mtabNames, HAAnames{ii}));
+    G1 = findgroups(sInfo.matrix(iTimesASW), sInfo.timePoint(iTimesASW), sInfo.sType(iTimesASW));
+    m1 = splitapply(@means,mtabData_exp(ind,iTimesASW)',G1)./1000;
+    mn = m1-m1(1);
+    mn(isnan(m1)) = 0;
+    errorbar(Durations, mn,...
+        splitapply(@stds,mtabData_exp(ind,iTimesASW)',G1)./1000,...
+        'Color', chainsaw{ii+1}, "LineWidth",1.5); hold on;
+    hold on
+end
+
+ax = gca;
+set(ax, "Box", "on", "LineWidth", 2, "FontSize", 14)
+ylabel("C-C_0 (nM)")
+xlabel("Time (h)")
+xlim(tRange_g)
+legend(["histidine",...
+    "asparagine",...
+    "aspartate"], "Location","northeast")
+saveas(f, "../graphs/HAA_photo1.png", "png")
+
 
 %% Which metabolites changed? 
 % Here's the part where we compare the initial and final time points, as
