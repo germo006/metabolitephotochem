@@ -1,5 +1,5 @@
-function [sampleNames, keepGoodData, MaxStd, RRFLim, LOQ] = considerSkyline02(...
-    exportedSkyline, sampleInfoFile, ionMode, ErrLim, NumStds)
+function [sampleNames, keepGoodData, MaxStd, LOQ] = considerSkyline02(...
+    exportedSkyline, sampleInfoFile, ionMode, NumStds)
 % considerSkyline V0 : This function is called by riSkyline.m and is
 % responsible for quantification of metabolites via a five-point standard
 % curve. It calculates LOD and LOQ as well. Quantification is based on a
@@ -22,10 +22,7 @@ function [sampleNames, keepGoodData, MaxStd, RRFLim, LOQ] = considerSkyline02(..
 % 2. sampleInfoFile: the modified sequence file containing file names and
 % condition information (*.xslx)
 % 3. ionMode: can be "neg" or "pos"
-% 4. ErrLim: Linearity criterion for low stds (probably between 0 and 1)
-% that denotes acceptable deviation from linearity as a fraction. 
-% 5. NumStds: number of standard deviations of the lowest nonzero standard
-% to use in calculating the distance from zero.
+% 4. NumStds: number of standard deviations of the zero standard to use in calculating LOQ.
 
 warning('off', 'MATLAB:table:ModifiedAndSavedVarnames');
 data = readtable(exportedSkyline, 'TreatAsEmpty', "#N/A");
@@ -417,7 +414,7 @@ for a = 1:length(compoundList.names)
             
             dataOut = getErrors(xdata,ydata); %errors for the standard curve
             [calcError, calcConc] = useErrors(dataOut,tData); %then calculate the concentrations
-            compoundList.LOQ(a) = 3.3.*sdblank./dataOut.slope; %Calculate LOQ
+            compoundList.LOQ(a) = NumStds.* dataOut.SDslope ./dataOut.slope; %Calculate LOQ
 
             if 0
                 if ~exist("StdCurves","dir")

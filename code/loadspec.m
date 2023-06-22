@@ -44,6 +44,12 @@ diffmeans.t0V = specmeans.VSW0 - specmeans.MQ0;
 diffmeans.t0As = specmeans.ASWs0 - specmeans.MQ0;
 diffmeans.t0Vs = specmeans.VSWs0 - specmeans.MQ0;
 
-clear ii horzmean premean ia ib preMean repGroups temp
+clear ii premean ia ib preMean temp
+
+Napierian = @(x) 2.303.*x./0.1; % Converts to Napierian absorbance using a 0.1 m cuvette (units m^-1)
+
+a_specmeans = specmeans;     a_specmeans{:,2:end-1} = Napierian(a_specmeans{:,2:end-1});
+a_means_BLsub = means_BLsub; a_means_BLsub{:,2:end-1} = Napierian(a_means_BLsub{:,2:end-1});
+a_diffmeans = diffmeans;     a_diffmeans{:,2:end-1} = Napierian(a_diffmeans{:,2:end-1});
 
 save("../datasets/absorbance.mat")

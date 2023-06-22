@@ -7,7 +7,38 @@
 clear
 close all
 clc
-load("..\datasets\BCP2.2023.03.16.mat")
+load("..\datasets\BCP2.2023.06.06.mat")
+load("../datasets/onlyGoodMtabs_10Apr2023.mat", "mtabNamesGood")
+
+% Delete the metabolites we're not working with.
+iDelete = ~ismember(mtabNames, mtabNamesGood);
+vars = whos();
+siz = 0;
+for ii=1:size(vars,1)
+    if strcmp(vars(ii).name, 'iDelete')
+        continue
+    end
+    if vars(ii).size(1)==96
+        siz = siz +1;
+    end
+end
+toModify = cell(siz,2);
+jj=1;
+for ii=1:size(vars,1)
+    if strcmp(vars(ii).name, 'iDelete')
+        continue
+    end
+    if vars(ii).size(1)==96
+        toModify{jj,1} = vars(ii).name;
+        toModify{jj,2} = eval(vars(ii).name);
+        toModify{jj,2}(iDelete,:) = [];
+        assignin('base',toModify{jj,1},toModify{jj,2})
+        jj= jj+1;
+    end
+end
+
+
+
 load("AlbumMaps.mat")
 mtabNames = strrep(mtabNames,'′','''');
 if ~exist("../graphs", "dir")
@@ -57,10 +88,14 @@ end
 
 sInfo.plotGroups = findgroups(sInfo.matrix, sInfo.timePoint, sInfo.sType);
 
+
+
 % groupmeans = array2table(splitapply(@means,mtabData_exp',sInfo_exp.plotGroups),'VariableNames',mtabNames);
 % groupstd = array2table(splitapply(@stds,mtabData_exp',sInfo_exp.plotGroups)./sqrt(3),'VariableNames',mtabNames);
 grpmeans = splitapply(@means,mtabData_exp',sInfo.plotGroups);
-grpstd = splitapply(@stds,mtabData_exp',sInfo.plotGroups)./sqrt(3);
+grpstd = splitapply(@stds,mtabData_exp',sInfo.plotGroups);
+grpnstd = grpstd./grpmeans;
+grpAvgnstd = mean(mean(grpnstd,1, 'omitnan'),2,'omitnan');
 
 % singleRowInfo = sInfo_exp(cell2mat(sInfo_exp.rep)=='1', :);
 % iTimesVSW = (singleRowInfo.matrix=="VSW" & singleRowInfo.sType=="sample");
@@ -77,6 +112,56 @@ iCA = (sInfo.matrix=="ASW" & sInfo.sType=="ctrl");
 iBV = (sInfo.matrix=="VSW" & sInfo.sType=="blank");
 iBA = (sInfo.matrix=="ASW" & sInfo.sType=="blank");
 
+%% How much light did each sample absorb, anyway?
+% We know irradiance varied spatially, so maybe that accounts for some
+% variance in concentrations.
+load("../datasets/AbsorbedPhotons.mat")
+Dur_sec = seconds(times-min(times));
+Dur_sec(1,:) = [];
+% The variables in AbsorbedPhotons are in terms of geometry in the SunTest,
+% meaning that the first column corresponds to the sample closest to the
+% front, which is also the first one removed. I will multiply the values in
+% each column by the number of seconds (approximately) that they remained
+% in the SunTest.
+AbsTot_VSW = Dur_sec.*Wabs_sVSW'.*0.012./1e6; %converts from umol h^-1 L^-1 to mol photons
+AbsTot_ASW = Dur_sec.*Wabs_sASW'.*0.012./1e6;
+
+IrrFig = figure;
+subplot(2,1,1)
+h1 = plot(l_SunTest, AbsTot_VSW);
+subplot(2,1,2)
+h2 = plot(l_SunTest, AbsTot_ASW);
+
+% Okay, but how much does the absorbance vary relative to the time they've
+% spent in the solar sim?
+% Let's calculate a mean and then see how the different samples compare.
+
+AbsRel_VSW = Wabs_sVSW./mean(Wabs_sVSW,2);
+AbsRel_ASW = Wabs_sASW./mean(Wabs_sASW,2);
+
+IrrRelFig = figure;
+subplot(2,1,1)
+h1 = plot(l_SunTest, AbsRel_VSW, "LineWidth",1.5);
+grad = linspace(0.2,0.9,5)';
+lStyles = {"-","--","-.",":","-"};
+for ii = 1:5
+    h1(ii).Color = grad(ii)*chainsaw{1};
+    h1(ii).LineStyle = lStyles{ii};
+end
+xlim([280,650])
+title("VSW")
+ylabel("Absorption (fraction of mean)")
+legend({"1 hour","2 hours", "4 hours", "8 hours", "12 hours"})
+subplot(2,1,2)
+h2 = plot(l_SunTest, AbsRel_ASW, "LineWidth",1.5);
+for ii = 1:5
+    h2(ii).Color = grad(ii)*chainsaw{1};
+    h2(ii).LineStyle = lStyles{ii};
+end
+xlim([280,650])
+title("ASW")
+ylabel("Absorption (fraction of mean)")
+xlabel("\lambda, nm")
 %% This is a short diversion to look at flow cytometry data. 
 
 if 0
@@ -99,7 +184,7 @@ end
 if ~exist("../graphs/logx/", "dir")
     mkdir("../graphs/logx/");
 end
-if 0
+if 1
     for ii=1:length(mtabNames)
         f = figure("Visible","off");
         G1 = findgroups(sInfo.matrix(iTimesASW), sInfo.timePoint(iTimesASW), sInfo.sType(iTimesASW));
@@ -634,7 +719,7 @@ eps(:,1:3) = [];
 lrange = 280:699;
 eps_quant = eps.ep(ismember(eps.l, lrange));
 eps_quant(eps_quant==0,:) = 1;
-eps_quant = movmean(eps_quant,5,"Endpoints","shrink");
+% eps_quant = movmean(eps_quant,5,"Endpoints","shrink");
 
 
 %only worth calculating where there's acutally trp absorption

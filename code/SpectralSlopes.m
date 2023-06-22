@@ -3,7 +3,7 @@
 
 load('../datasets/absorbance.mat')
 
-means_BLsub_a = means_BLsub;
+means_BLsub_a = a_means_BLsub; % Copy the variable of abs coefficients.
 wavelengthRange = 275:295';
 i_275_295 = ismember(means_BLsub_a.l, wavelengthRange);
 a275_295 = means_BLsub_a(i_275_295,:);
@@ -12,7 +12,7 @@ a0 = min(a275_295(:,1:end-1));
 a275_295_subBL = a275_295;
 a275_295_subBL(:,1:end-1) =  a275_295_subBL(:,1:end-1)-a0;
 a275_295_subBL_log = a275_295_subBL;
-a275_295_subBL_log(:,1:end-1) = 2.303.*log(a275_295_subBL_log(:,1:end-1));
+a275_295_subBL_log(:,1:end-1) = log(a275_295_subBL_log(:,1:end-1));
 a275_295_subBL_log_dM = a275_295_subBL_log{:,1:12};
 a275_295_subBL_log_dM(isinf(a275_295_subBL_log_dM)) = NaN;
 a275_295_subBL_log{:,1:12} = a275_295_subBL_log_dM;

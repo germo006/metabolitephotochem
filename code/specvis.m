@@ -6,26 +6,33 @@ clear
 close all
 
 load('../datasets/absorbance.mat')
-
+setDefaultFigs
+load("AlbumMaps.mat", "chainsaw")
 %% Advanced difference testing. 
 % First, I will excise the spectra for which I can make t0/t12 comparisons
 % and subtract the blank MQ baseline. 
+
+Napierian = @(x) 2.303.*x./0.1; % Converts to Napierian absorbance using a 0.1 m cuvette (units m^-1)
 
 t0 = specData{:,12:20} - specData.blank1;
 t0grp = findgroups(repGroups(11:19));
 t12 = specData{:,25:end} - specData.blank2;
 t12grp = findgroups(repGroups(24:end));
 
+% Convert absorbance to Napierian coefficients. 
+t0_a = Napierian(t0);
+t12_a = Napierian(t12);
+
 % Now calculate the mean difference between t0 and t12.
-diff_comp_means = splitapply(horzmean, t12, t12grp') - ...
-    splitapply(horzmean, t0, t0grp');
-diff_comp_means = [diffmeans(:,1), array2table(diff_comp_means, "VariableNames",["sASW", "VSW", "sVSW"])];
+diff_comp_means = splitapply(horzmean, t12_a, t12grp') - ...
+    splitapply(horzmean, t0_a, t0grp');
+diff_comp_means = [a_diffmeans(:,1), array2table(diff_comp_means, "VariableNames",["sASW", "VSW", "sVSW"])];
 
 % Now take those sample groups and do a t-test. 
 h_t = splitapply(@ttest_spec, t0, t12, t0grp');
 h_t = logical(h_t);
 
-if 0
+if 1
     figure
     h1a = scatter(diff_comp_means.l(~h_t(:,1)), diff_comp_means.sASW(~h_t(:,1)),...
         3, [0.2, 0.2, 0.2], "filled", "o", "HandleVisibility","on");
@@ -44,7 +51,7 @@ if 0
     legend("Change Not Significant", "sASW", "VSW","sVSW")
     xlim([249,801])
     xlabel("\lambda, nm")
-    ylabel("\Delta_{abs}")
+    ylabel("\Deltaa_{\lambda}")
 end
 
 %% Loading irradiance, Calculating Light Absorption
@@ -55,7 +62,7 @@ end
 
 % ...for each sample. 
 % So let's load that irradiance data I interpolated in loadradiometry.m
-load("irradiance.mat")
+load("../datasets/irradiance.mat")
 
 % Somewhat unfortunately, the radiometer had a limited range. So we'll
 % truncate the calculation to that range. 
@@ -90,9 +97,9 @@ ylabel("Position")
 c2 = colorbar(gca, "eastoutside");
 c2.Label.String = "W_{abs}, \mumol photons s^{-1} L";
 
+save("../datasets/AbsorbedPhotons.mat", "Wabs_sVSW", "Wabs_sASW", "l_SunTest")
 %%
-setDefaultFigs
-load("AlbumMaps.mat", "chainsaw")
+
 
 figure
 % subplot(3,1,1)

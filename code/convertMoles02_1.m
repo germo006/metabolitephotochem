@@ -1,6 +1,6 @@
-function [mtabData_pM,MaxStd_pM,RRFLim_pM,ratingFlags,mtabElem,LOQ_pM] =...
+function [mtabData_pM,MaxStd_pM,ratingFlags,mtabElem,LOQ_pM] =...
     convertMoles02(negTransitions, posTransitions, mtabNames, mtabData,...
-    MaxStd, RRFLim, LOQ)
+    MaxStd, LOQ)
 
 %% Converting to molar basis
 % This process involves reloading the transition list files and matching
@@ -43,7 +43,7 @@ ratingFlags = MW.Rating(iNames);
 % convert from pg/mL to pM
 mtabData_pM = mtabData.*1000./MWtoConvert;
 MaxStd_pM = MaxStd.*1000./MWtoConvert;
-RRFLim_pM = RRFLim.*1000./MWtoConvert;
+
 LOQ_pM = LOQ.*1000./MWtoConvert;
 mtabElem = table(MW.C(iNames), MW.N(iNames), MW.O(iNames),'VariableNames',...
     {'C','N','O'});

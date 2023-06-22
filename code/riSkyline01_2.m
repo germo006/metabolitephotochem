@@ -8,7 +8,7 @@
 clear
 
 % Set filenames
-fileBase = 'BCP2'; % Set this, don't mess with the automatic date system.
+fileBase = '../datasets/BCP2'; % Set this, don't mess with the automatic date system.
 today = datestr(datetime('now'),'.yyyy.mm.dd');
 NameOfFile = string([fileBase,today,'.mat']);
 
@@ -18,19 +18,19 @@ NameOfFile = string([fileBase,today,'.mat']);
 ErrLim = 0.2;
 
 % Set the sequence file here.
-wDir = '../sequence_fromMethods';
+wDir = '../datasets';
 fName = 'mtab_Noah_Photochem2_BC_120822_delStds.xlsx';
 sampleInfoFile = string([wDir filesep fName]);
 clear wDir
 
 % Where are the lists of exported exported data from Skyline?
-sDir = '.';
+sDir = '../datasets';
 dfile_pos = string([sDir filesep 'Quant_BCP2_pos_14Mar2023.csv']);
 dfile_neg = string([sDir filesep 'Quant_BCP2_neg_14Mar2023.csv']); 
 clear sDir
 
 % Where are the transition lists?
-tDir = '..';
+tDir = '../datasets';
 tfile_pos = string([tDir filesep 'Pos-NewTransitions_31Dec2022.xlsx']);
 tfile_neg = string([tDir filesep 'Neg-NewTransitions_31Dec2022.xlsx']);
 clear tDir 
@@ -43,9 +43,9 @@ clear tDir
 
 % Move onto the processing for positive mode.
 [pos.sNames, pos.kgd, pos.MaxStd, pos.LOQ] = ...
-    considerSkyline02_1(dfile_pos, sampleInfoFile, 'pos', 3.3);
+    considerSkyline02_2(dfile_pos, sampleInfoFile, 'pos', 3.3);
 [neg.sNames, neg.kgd, neg.MaxStd, neg.LOQ] = ...
-    considerSkyline02_1(dfile_neg, sampleInfoFile, 'neg', 3.3);
+    considerSkyline02_2(dfile_neg, sampleInfoFile, 'neg', 3.3);
 
 clear fName fileBase today ErrLim
 
@@ -53,7 +53,7 @@ clear fName fileBase today ErrLim
 
 [mtabNames,I] = sort(cat(1,[neg.kgd.names + " neg"],[pos.kgd.names + " pos"]));
 MaxStd = [neg.MaxStd;pos.MaxStd] ; MaxStd = MaxStd(I);
-RRFLim = [neg.RRFLim;pos.RRFLim] ; RRFLim = RRFLim(I);
+% RRFLim = [neg.RRFLim;pos.RRFLim] ; RRFLim = RRFLim(I);
 LOQ = [neg.LOQ;pos.LOQ] ; LOQ = LOQ(I);
 if length(unique(mtabNames)) ~= length(mtabNames)
     error('Something is wrong - duplicate names in the list of metabolites')
@@ -269,8 +269,8 @@ if 0
 end
 
 mtabNames = strrep(mtabNames,"′","'");
-[mtabData_pM,MaxStd_pM,RRFLim_pM,ratingFlags,mtabElem, LOQ_pM] = convertMoles02(tfile_neg,...
-    tfile_pos,mtabNames,mtabData,MaxStd,RRFLim, LOQ);
+[mtabData_pM,MaxStd_pM,ratingFlags,mtabElem, LOQ_pM] = convertMoles02_1(tfile_neg,...
+    tfile_pos,mtabNames,mtabData,MaxStd, LOQ);
 
 save(NameOfFile)
 
