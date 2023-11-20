@@ -45,9 +45,9 @@ if 1
     h1 = scatter(diff_comp_means.l(h_t(:,1)), diff_comp_means.sASW(h_t(:,1)),...
         5, chainsaw{1}, "filled", "o");
     h2 = scatter(diff_comp_means.l(h_t(:,2)), diff_comp_means.VSW(h_t(:,2)),...
-        5, chainsaw{3}, "filled", "o");
+        5, chainsaw{2}, "filled", "+", "MarkerEdgeColor", chainsaw{2});
     h3 = scatter(diff_comp_means.l(h_t(:,3)), diff_comp_means.sVSW(h_t(:,3)),...
-        5, chainsaw{4}, "filled", "o");
+        5, chainsaw{4}, "filled", "*", "MarkerEdgeColor", chainsaw{4});
     legend("Change Not Significant", "sASW", "VSW","sVSW")
     xlim([249,801])
     xlabel("\lambda, nm")
