@@ -10,7 +10,7 @@ function dydt = int_solver(W,eps,Q,lambda)
 %       lambda: nx1 range of integration wavelengths, nm
 %
 %   OUTPUT
-%       Y: an estimate of the value C0-Ct/(2.3*C0)
+%       dydt
 %
 %
 % Unit conversions

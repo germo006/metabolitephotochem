@@ -1,7 +1,7 @@
 function Y = int_quantum(W,eps,Q,kp,tf,lambda)
 % Computes a double integral to time tf on wavelengths lambda. 
 %   INPUTS
-%       W:      nx1 vector of irradiance, umol m-3 s-1 nm-1
+%       W:      nx1 vector of irradiance, umol m-2 s-1 nm-1
 %       eps:    nx1 molar extinction coefficients, M-1 cm-1
 %       Q:      1x1 quantum yield
 %       kp:     1x1, estimated first-order decay rate, h-1

@@ -54,6 +54,9 @@ if 1
     ylabel("\Deltaa_{\lambda}")
 end
 
+t0_a = [a_diffmeans(:,1), array2table(splitapply(horzmean, t0_a, t0grp'), "VariableNames",["sASW", "VSW", "sVSW"])];
+t12_a = [a_diffmeans(:,1), array2table(splitapply(horzmean, t12_a, t12grp'), "VariableNames",["sASW", "VSW", "sVSW"])];
+save("../datasets/Napierian.mat", "t0_a", "t12_a")
 %% Loading irradiance, Calculating Light Absorption
 % See my giant word doc outlining what I'm doing here, but basically I need
 % to evaluate the following equation:

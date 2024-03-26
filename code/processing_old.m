@@ -118,6 +118,7 @@ AbsTot_ASW = Dur_sec.*Wabs_sASW'.*0.012./1e6;
 IrrFig = figure;
 subplot(2,1,1)
 h1 = plot(l_SunTest, AbsTot_VSW);
+legend({"1 hour","2 hours", "4 hours", "8 hours", "12 hours"})
 subplot(2,1,2)
 h2 = plot(l_SunTest, AbsTot_ASW);
 
@@ -908,30 +909,40 @@ end
 % in this way, and calculates for the full range of what was measured by
 % the radiometer. 
 eps = readtable("../datasets/ExtinctionCalcs.xlsx","Sheet","FinalMolarExt","Range", "A2:F553");
-lrange = 280:699;
+lrange = 280:699';
 eps_quant = eps(ismember(eps.l, lrange),:);
-eps_quant = flip(eps_quant,1);
+%eps_quant = flip(eps_quant,1);
 load('../datasets/irradiance.mat')
+load("../datasets/Napierian.mat")
+addpath('quantum_invar_geom\')
 
 EA = E_ASW(1:5,1:420);
-EV = E_VSW(1:5,1:420);
+
+t0_a(~ismember(t12_a.l,lrange),:) = [];
+t12_a(~ismember(t0_a.l,lrange),:) = [];
+r = 7; %in mm
+alph = t0_a.sASW;
 
 mtabNamesQY = {"histidine pos";...
     "glutamic acid pos";...
     "glutamine neg";...
     "tryptophan pos";...
     "kynurenine neg"};
-addpath("./quantum_invariant")
+addpath("./quantum_invar_geom")
 AQYTable = table(mtabNamesQY,zeros(size(mtabNamesQY)),zeros(size(mtabNamesQY)),...
     'VariableNames',{'Metabolite','AQY','MaxLambda'});
 for jj = 1:length(mtabNamesQY)
     ii = find(mtabNames==mtabNamesQY{jj});
+    if mtabNamesQY{jj}=="glutamic acid pos"
+        continue
+    end
     eps_quant_jj = eps_quant{:,jj+1};
     iBadEps = isnan(eps_quant_jj)|eps_quant_jj==0;
     eps_quant_jj(iBadEps) = [];
     EA_jj = EA(:,~iBadEps);
     lrange_jj = lrange(:,~iBadEps);
     LOQ_nM = LOQ_pM./1000;
+    alph_jj = alph(~iBadEps);
 
     G1 = findgroups(sInfo.matrix(iTimesASW), sInfo.timePoint(iTimesASW), sInfo.sType(iTimesASW));
     G2 = findgroups(sInfo.matrix(iTimesVSW), sInfo.timePoint(iTimesVSW), sInfo.sType(iTimesVSW));
@@ -943,11 +954,11 @@ for jj = 1:length(mtabNamesQY)
     m2(isnan(m2)|m2==0,:) = LOQ_nM(ii); s2(isnan(s2)|s2==0,:) = 0.05*LOQ_nM(ii);
     
     
-    Q = mean(eps_quant_jj./(2*max(eps_quant_jj))); % First Guess
+    Q = 0.0001; %mean(eps_quant_jj./(2*max(eps_quant_jj))); % First Guess
     Qmax = 1;
     Qmin = 1e-7*Q;
 
-    chiA = @(Q) chisq_quantum(m1,s1,EA_jj,eps_quant_jj,Q,Durations,lrange_jj);
+    chiA = @(Q) chisq_quantum_invariant(m1,s1,EA_jj,eps_quant_jj, alph_jj,Q,Durations,lrange_jj,r);
     opts = optimset("PlotFcns", "optimplotfval", "MaxFunEvals", 3e7, "TolX", 1e-6);
     QAest = fmincon(chiA,Q, [],[],[],[],Qmin,Qmax,[],opts);
 
@@ -1234,11 +1245,7 @@ chiA = @(Q) chisq_quantum(m1,s1,EA,eps_quant,Q,Durations,lrange);
 opts = optimset("PlotFcns", "optimplotfval", "MaxFunEvals", 3e7, "TolX", 1e-6);
 QAest = fmincon(chiA,Q, [],[],[],[],Qmin,Qmax,[],opts);
 
-% chiV = @(Q) chisq_quantum(m2,s2,EV,eps_quant,Q,Durations,lrange);
-% opts = optimset("PlotFcns", "optimplotfval", "MaxFunEvals", 3e6);
-% QVest = fmincon(chiV,Q, [],[],[],[],Qmin,Qmax,[],opts);
 figure
-% subplot(1,2,1)
 plot(lrange, QAest, "LineWidth",2)
 xlabel("\lambda, nm"); ylabel("\Phi_{ASW}");
 xlim([280 407])
@@ -1247,10 +1254,7 @@ yyaxis right
 plot(lrange, eps_quant, "LineWidth",2)
 ylabel("\epsilon, M^{-1} cm^{-1}")
 set(gca, "YColor", "k", "YScale", "log")
-% subplot(1,2,2)
-% plot(lrange, QVest, "LineWidth",2)
-% xlabel("\lambda, nm"); ylabel("\Phi_{VSW}");
-% xlim([280 407])
+
 
 %% Estimating Decay with QY
 
@@ -1434,20 +1438,16 @@ saveas(f, "../graphs/trpPlot/trpQY.png", "png")
 %close(f)
 
 %% AQY WIDEBAND CALCULATION
-addpath("./quantum_invariant")
+addpath("./quantum_invar_geom")
 Q = mean(eps_quant./(2*max(eps_quant))); % First Guess 
 Qmax = 1;
 Qmin = 1e-7*Q;
 
-chiA = @(Q) chisq_quantum(m1,s1,EA,eps_quant,Q,Durations,lrange);
+chiA = @(Q) chisq_quantum_invariant(m1,s1,EA,eps_quant,alph,Q,Durations,lrange,r);
 opts = optimset("PlotFcns", "optimplotfval", "MaxFunEvals", 3e7, "TolX", 1e-6);
 QAest = fmincon(chiA,Q, [],[],[],[],Qmin,Qmax,[],opts);
 
-% chiV = @(Q) chisq_quantum(m2,s2,EV,eps_quant,Q,Durations,lrange);
-% opts = optimset("PlotFcns", "optimplotfval", "MaxFunEvals", 3e6);
-% QVest = fmincon(chiV,Q, [],[],[],[],Qmin,Qmax,[],opts);
 figure
-% subplot(1,2,1)
 plot(lrange, QAest*ones(size(lrange)), "LineWidth",2)
 xlabel("\lambda, nm"); ylabel("\Phi_{ASW}");
 xlim([280 407])
